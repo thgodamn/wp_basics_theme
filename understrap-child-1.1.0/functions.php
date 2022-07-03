@@ -23,9 +23,10 @@ function understrap_remove_scripts() {
 add_action( 'wp_enqueue_scripts', 'understrap_remove_scripts', 20 );
 
 add_action('wp_ajax_estate_add', 'estate_add'); // wp_ajax_{ACTION HERE}
-add_action('wp_ajax_jkfilter_loadmore', 'estate_add'); // wp_ajax_{ACTION HERE}
+//add_action('wp_ajax_estate_add_loadmore', 'estate_add'); // wp_ajax_{ACTION HERE}
 add_action('wp_ajax_nopriv_estate_add', 'estate_add');
 
+//Ajax-форма отправить недваижимость
 function estate_add(){
     if (!empty($_POST['address']) && !empty($_POST['coast']) && !empty($_POST['square']) && !empty($_POST['living_square']) && !empty($_POST['floor'])  ) {
         $post_data = array(
@@ -116,6 +117,7 @@ function understrap_child_customize_controls_js() {
 add_action( 'customize_controls_enqueue_scripts', 'understrap_child_customize_controls_js' );
 
 //Custom
+//регистрируем таксономию недвижимость
 function estate_type() {
     register_taxonomy(
         'estate_type',  					// This is a name of the taxonomy. Make sure it's not a capital letter and no space in between
@@ -217,12 +219,12 @@ function post_type_city() {
 }
 add_action('init', 'post_type_city');
 
-// Добавим метабокс выбора команды к игроку
+// Добавим метабокс выбора города
 add_action('add_meta_boxes', function () {
     add_meta_box( 'estate_city', 'Города', 'estate_city_metabox', 'estate', 'side', 'low'  );
 }, 1);
 
-// метабокс с селектом команд
+// метабокс с селектом города
 function estate_city_metabox( $post ){
     $citys = get_posts(array( 'post_type'=>'city', 'posts_per_page'=>-1, 'orderby'=>'post_title', 'order'=>'ASC' ));
 
@@ -249,7 +251,7 @@ function estate_city_metabox( $post ){
         echo 'Городов нет...';
 }
 
-// проверка подключения игрока
+// вывод недвижимости у городов
 add_action('add_meta_boxes', function(){
     add_meta_box( 'estates', 'Недвижимость', 'city_estates_metabox', 'city', 'side', 'low'  );
 }, 1);
