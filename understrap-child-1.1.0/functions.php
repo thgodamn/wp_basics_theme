@@ -22,36 +22,6 @@ function understrap_remove_scripts() {
 }
 add_action( 'wp_enqueue_scripts', 'understrap_remove_scripts', 20 );
 
-add_action('wp_ajax_estate_add', 'estate_add'); // wp_ajax_{ACTION HERE}
-//add_action('wp_ajax_estate_add_loadmore', 'estate_add'); // wp_ajax_{ACTION HERE}
-add_action('wp_ajax_nopriv_estate_add', 'estate_add');
-
-//Ajax-форма отправить недваижимость
-function estate_add(){
-    if (!empty($_POST['address']) && !empty($_POST['coast']) && !empty($_POST['square']) && !empty($_POST['living_square']) && !empty($_POST['floor'])  ) {
-        $post_data = array(
-            'post_title'    => $_POST['address'],
-            'post_content'  => '',
-            'post_status'   => 'publish',
-            'post_type'=>'estate',
-            'post_author'   => 1,
-            'coast' => $_POST['coast'],
-            'square' => $_POST['square'],
-            'living_square' => $_POST['living_square'],
-            'address' => $_POST['address'],
-            'floor' => $_POST['floor'],
-        );
-        $post_id = wp_insert_post( $post_data );
-
-        if ($post_id != 0)
-            echo 'success';
-        else echo 'denied';
-    } else {
-        echo 'denied';
-    }
-    die();
-}
-
 /**
  * Enqueue our stylesheet and javascript file
  */
@@ -227,6 +197,7 @@ add_action('add_meta_boxes', function () {
 // метабокс с селектом города
 function estate_city_metabox( $post ){
     $citys = get_posts(array( 'post_type'=>'city', 'posts_per_page'=>-1, 'orderby'=>'post_title', 'order'=>'ASC' ));
+    wp_nonce_field( 'parent_city_meta_box_nonce', 'meta_box_nonce' );
 
     if( $citys ){
         // чтобы портянка пряталась под скролл...
@@ -238,7 +209,7 @@ function estate_city_metabox( $post ){
         foreach( $citys as $city ){
             echo '
 			<li><label>
-				<input type="radio" name="post_parent" value="'. $city->ID .'" '. checked($city->ID, $post->post_parent, 0) .'> '. esc_html($city->post_title) .'
+				<input type="radio" name="parent_city" value="'. $city->ID .'" '. checked($city->ID, $post->parent_city, 0) .'> '. esc_html($city->post_title) .'
 			</label></li>
 			';
         }
@@ -251,19 +222,96 @@ function estate_city_metabox( $post ){
         echo 'Городов нет...';
 }
 
-// вывод недвижимости у городов
-add_action('add_meta_boxes', function(){
-    add_meta_box( 'estates', 'Недвижимость', 'city_estates_metabox', 'city', 'side', 'low'  );
-}, 1);
+add_action( 'save_post', 'estate_city_metabox_save' );
+function estate_city_metabox_save( $post_id )
+{
+    // Bail if we're doing an auto save
+    if( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) return;
 
-function city_estates_metabox( $post ){
-    $estates = get_posts(array( 'post_type'=>'estate', 'post_parent'=>$post->ID, 'posts_per_page'=>-1, 'orderby'=>'post_title', 'order'=>'ASC' ));
+    // if our nonce isn't there, or we can't verify it, bail
+    if( !isset( $_POST['meta_box_nonce'] ) || !wp_verify_nonce( $_POST['meta_box_nonce'], 'parent_city_meta_box_nonce' ) ) return;
 
-    if( $estates ){
-        foreach( $estates as $estate ){
-            echo $estate->post_title .'<br>';
-        }
+    // if our current user can't edit this post, bail
+    if( !current_user_can( 'edit_post' ) ) return;
+
+    // now we can actually save the data
+    $allowed = array(
+        'a' => array( // on allow a tags
+            'href' => array() // and those anchors can only have href attribute
+        )
+    );
+
+    if( isset( $_POST['parent_city'] ) )
+        update_post_meta( $post_id, 'parent_city', wp_kses( $_POST['parent_city'], $allowed ) );
+
+}
+
+add_action('wp_ajax_estate_add', 'estate_add'); // wp_ajax_{ACTION HERE}
+//add_action('wp_ajax_estate_add_loadmore', 'estate_add'); // wp_ajax_{ACTION HERE}
+add_action('wp_ajax_nopriv_estate_add', 'estate_add');
+
+//Ajax-форма отправить недваижимость
+function estate_add(){
+    //debug_log($_FILES['file']);
+    //debug_log($_POST);
+    //debug_log(wp_upload_dir());
+
+    if( !isset( $_POST['form_nonce'] ) || !wp_verify_nonce( $_POST['form_nonce'], 'estate_form_nonce' ) ) {
+        echo 'denied';
+        return;
     }
-    else
-        echo 'Недвижимости нет...';
+
+    if (!empty($_POST['address']) && !empty($_POST['coast']) && !empty($_POST['square']) && !empty($_POST['living_square']) && !empty($_POST['floor']) && isset($_FILES['file'])
+    && $_POST['coast'] >= 1 && $_POST['square'] >= 1 && $_POST['living_square'] >= 1 && $_POST['floor'] >= 1) {
+        $post_data = array(
+            'post_title'    => $_POST['address'],
+            'post_content'  => '',
+            'post_status'   => 'publish',
+            'post_type'=>'estate',
+            'post_author'   => 1,
+            'coast' => $_POST['coast'],
+            'square' => $_POST['square'],
+            'living_square' => $_POST['living_square'],
+            'address' => $_POST['address'],
+            'floor' => $_POST['floor'],
+        );
+        $post_id = wp_insert_post( $post_data );
+
+        $upload = wp_upload_bits($_FILES["file"]["name"], null, file_get_contents($_FILES["file"]["tmp_name"]));
+        $filename = $upload['file'];
+        $uploadfile = wp_upload_dir();
+
+        move_uploaded_file($filename, $uploadfile);  // (file name , designation)
+
+        $wp_filetype = wp_check_filetype($filename, null );
+        $attachment = array(
+            'post_mime_type' => $wp_filetype['type'],
+            'post_title' => sanitize_file_name($filename),
+            'post_content' => '',
+            'post_status' => 'inherit'
+        );
+        $attach_id = wp_insert_attachment( $attachment, $filename, $post_id );
+        require_once(ABSPATH . 'wp-admin/includes/image.php');
+        $attach_data = wp_generate_attachment_metadata( $attach_id, $filename );
+
+        wp_update_attachment_metadata( $attach_id, $attach_data );
+        set_post_thumbnail( $post_id, $attach_id );  // set post thumnail (featured image) for the given post
+
+        if ($post_id != 0)
+            echo 'success';
+        else echo 'denied';
+    } else {
+        echo 'denied';
+    }
+    die();
+}
+
+function debug_log($obj)
+{
+    $h = fopen('D:/OpenServer/domains/wordpress_basicstech/debug.html', 'a');
+    ob_start();
+    var_dump($obj);
+    fwrite($h, ob_get_clean());
+    fwrite($h, "---------------------------------\n");
+    fclose($h);
 }

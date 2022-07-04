@@ -30,6 +30,9 @@ if (have_posts()) {
         $count++;
         if ($count % 3 == 0 && $count >= 3) echo '</div>';
     }
+    wp_reset_query();
+} else {
+    echo '<div>Города еще не добавлены</div>';
 }
 ?>
 </section>

@@ -12,7 +12,7 @@ get_header();
                     <div class="card-body">
                         <?php
                             $post = get_post();
-                            if ($post->post_parent != 0)  echo '<div><a href="'.get_permalink($post->post_parent).'">'.get_the_title( $post->post_parent ).'</a></div>';
+                            if ($post->parent_city != 0)  echo '<div><a href="'.get_permalink($post->parent_city).'">'.get_the_title( $post->parent_city ).'</a></div>';
                             if (!empty(get_field( "coast" ))) echo '<div>Стоимость: '.get_field( "coast" ).' руб.</div>';
                             if (!empty(get_field( "square" ))) echo '<div>Площадь (м2): '.get_field( "square" ).'</div>';
                             if (!empty(get_field( "living_square" ))) echo '<div>Жилая площадь (м2)'.get_field( "living_square" ).'</div>';

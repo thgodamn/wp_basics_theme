@@ -21,8 +21,10 @@ get_header();
                                 <input class="form-outline mb-4 form-control" name="address" value="" placeholder="address">
                                 <input class="form-outline mb-4 form-control" name="living_square" value="" placeholder="living_square">
                                 <input class="form-outline mb-4 form-control" name="floor" value="" placeholder="floor">
+                                <input class="form-outline mb-4 form-control" name="image" type="file">
                                 <button class="btn btn-primary btn-block mb-4" type="submit">Применить фильтры</button>
                                 <input type="hidden" name="action" value="estate_add">
+                                <?php wp_nonce_field( 'estate_form_nonce', 'form_nonce' ); ?>
                                 <div class="form-result" style="display: none;"></div>
                     </form>
 
@@ -36,9 +38,16 @@ get_header();
         $('#estate_add').submit(function(e){
             e.preventDefault();
             var filter = $(this);
+
+            var form_data = new FormData($(this)[0]);
+            form_data.append('file', filter.find('input[name=image]').prop('files')[0]);
+
             $.ajax({
                 url:$(this).attr('action'),
-                data:$(this).serialize(), //+ "&key=val", // form data
+                //data:$(this).serialize(),
+                data: form_data,
+                processData: false,
+                contentType: false,
                 type:$(this).attr('method'), // POST
                 beforeSend:function(xhr){
                     filter.find('button').text('Загрузка...'); // changing the button label

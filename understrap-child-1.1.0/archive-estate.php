@@ -35,7 +35,11 @@ query_posts(array('post_type' => 'estate', 'posts_per_page' => '10', 'paged' => 
                         $count++;
                         if ($count % 3 == 0 && $count >= 3) echo '</div>';
                     }
+                    wp_reset_query();
+                } else {
+                    echo '<div>Недвижимость еще не добавлена</div>';
                 }
+
                 ?>
 </section>
 <?php
