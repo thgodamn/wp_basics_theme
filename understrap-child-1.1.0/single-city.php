@@ -6,7 +6,14 @@ get_header();
 
 <?php
 $paged = 0;
-query_posts(array('post_type' => 'estate', 'posts_per_page' => '10', 'paged' => $paged, 'post_parent' => get_the_ID() )); //первая загрузка страницы
+query_posts(array('post_type' => 'estate', 'posts_per_page' => '10', 'paged' => $paged, 'meta_query'=> array(
+    array(
+        'key' => 'parent_city',
+        'compare' => '=',
+        'value' => get_the_ID(),
+        //'type' => 'numeric',
+    )
+) )); //первая загрузка страницы
 ?>
 
     <main class="mt-4">
