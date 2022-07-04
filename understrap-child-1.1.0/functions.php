@@ -253,7 +253,7 @@ add_action('wp_ajax_nopriv_estate_add', 'estate_add');
 //Ajax-форма отправить недваижимость
 function estate_add(){
     //debug_log($_FILES['file']);
-    //debug_log($_POST);
+    debug_log($_POST);
     //debug_log(wp_upload_dir());
 
     if( !isset( $_POST['form_nonce'] ) || !wp_verify_nonce( $_POST['form_nonce'], 'estate_form_nonce' ) ) {
@@ -269,13 +269,19 @@ function estate_add(){
             'post_status'   => 'publish',
             'post_type'=>'estate',
             'post_author'   => 1,
-            'coast' => $_POST['coast'],
-            'square' => $_POST['square'],
-            'living_square' => $_POST['living_square'],
-            'address' => $_POST['address'],
-            'floor' => $_POST['floor'],
+            //'coast' => $_POST['coast'],
+            //'square' => $_POST['square'],
+            //'living_square' => $_POST['living_square'],
+            //'address' => $_POST['address'],
+            //'floor' => $_POST['floor'],
         );
         $post_id = wp_insert_post( $post_data );
+
+        update_field( 'coast', $_POST['coast'], $post_id );
+        update_field( 'square', $_POST['square'], $post_id );
+        update_field( 'living_square', $_POST['living_square'], $post_id );
+        update_field( 'address', $_POST['address'], $post_id );
+        update_field( 'floor', $_POST['floor'], $post_id );
 
         $upload = wp_upload_bits($_FILES["file"]["name"], null, file_get_contents($_FILES["file"]["tmp_name"]));
         $filename = $upload['file'];
