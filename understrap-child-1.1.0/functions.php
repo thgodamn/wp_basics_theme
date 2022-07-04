@@ -253,7 +253,7 @@ add_action('wp_ajax_nopriv_estate_add', 'estate_add');
 //Ajax-форма отправить недваижимость
 function estate_add(){
     //debug_log($_FILES['file']);
-    debug_log($_POST);
+    //debug_log($_POST);
     //debug_log(wp_upload_dir());
 
     if( !isset( $_POST['form_nonce'] ) || !wp_verify_nonce( $_POST['form_nonce'], 'estate_form_nonce' ) ) {
